@@ -82,6 +82,7 @@ class Thread {
 
   public:
     Thread(char* debugName);		// initialize a Thread 
+    Thread(char* debugName, int prio);
     ~Thread(); 				// deallocate a Thread
 					// NOTE -- thread being deleted
 					// must not be running when delete 
@@ -132,6 +133,9 @@ class Thread {
   private:
     int userID;
     int threadID;
+
+    int priority; //1<=priority<=100 数字越小，优先级越高
+
   public:
     int getUID(){
         return userID;
@@ -141,6 +145,13 @@ class Thread {
     }
     int getStatus(){
         return status;
+    }
+    void setPriority(int setnum){
+        priority = setnum;
+        return;
+    }
+    int getPriority(){
+        return priority;
     }
 
 };

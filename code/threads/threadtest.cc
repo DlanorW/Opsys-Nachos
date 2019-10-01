@@ -33,10 +33,11 @@ SimpleThread(int which)
     int num;
     
     for (num = 0; num < 5; num++) {
-	printf("*** thread %d looped %d times\n", which, num);
-        ThreadsStatus();
-        //printf("this thread's tid=%d\n", currentThread->getTID());
-        currentThread->Yield();
+	printf("*** thread %d looped %d times with priority%d\n", 
+                which, num, currentThread->getPriority());
+        //ThreadsStatus();
+        //printf("this thread's prio=%d\n", currentThread->getPriority());
+        //currentThread->Yield();
     }
 }
 
@@ -52,15 +53,19 @@ ThreadTest1()
     DEBUG('t', "Entering ThreadTest1");
     
 
-    Thread *t = new Thread("forked thread");
+    Thread *t = new Thread("forked thread",20);
+    Thread *t2 = new Thread("forked thread",70);
 
-    t->Fork(SimpleThread, (void*)1);
+    t->Fork(SimpleThread, (void*)1);//printf("debug\n");
+    t2->Fork(SimpleThread, (void*)2);
+    SimpleThread(0);
 
+    /*
     printf("cur uid=%d tid=%d\n", currentThread->getUID(), 
 	currentThread->getTID());
     printf("t   uid=%d tid=%d\n", t->getUID(), t->getTID());
-
-    SimpleThread(0);
+    */
+    
 }
 
 

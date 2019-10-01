@@ -56,7 +56,12 @@ Scheduler::ReadyToRun (Thread *thread)
     DEBUG('t', "Putting thread %s on ready list.\n", thread->getName());
 
     thread->setStatus(READY);
-    readyList->Append((void *)thread);
+    readyList->Append((void *)thread);//printf("debug\n");
+
+    if(currentThread!=NULL && thread!=currentThread &&
+       thread->getPriority() < currentThread->getPriority()){
+        currentThread->Yield();
+    }
 }
 
 //----------------------------------------------------------------------
@@ -70,7 +75,27 @@ Scheduler::ReadyToRun (Thread *thread)
 Thread *
 Scheduler::FindNextToRun ()
 {
-    return (Thread *)readyList->Remove();
+    int maxprio=100;
+    Thread *res=NULL;
+    int totalnum=readyList->NumInList();
+    //printf("in this, num=%d\n",totalnum);
+    for(int i=0;i<totalnum;++i){
+        Thread *now = (Thread *)readyList->Remove();
+        if(now->getPriority()<maxprio){
+            maxprio=now->getPriority();
+            res=now;
+        }
+        readyList->Append(now);//printf("loop");
+    }
+    if(res!=NULL){
+        readyList->Remove(res);
+    }
+    else{
+        res=(Thread *)readyList->Remove();
+    }
+
+    return res;
+    //return (Thread *)readyList->Remove();
 }
 
 //----------------------------------------------------------------------
@@ -91,7 +116,7 @@ void
 Scheduler::Run (Thread *nextThread)
 {
     Thread *oldThread = currentThread;
-    
+    //printf("here\n");
 #ifdef USER_PROGRAM			// ignore until running user programs 
     if (currentThread->space != NULL) {	// if this thread is a user program,
         currentThread->SaveUserState(); // save the user's CPU registers

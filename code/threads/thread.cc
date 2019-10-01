@@ -34,6 +34,7 @@
 //	"threadName" is an arbitrary string, useful for debugging.
 //----------------------------------------------------------------------
 
+/*default priority=50 version*/
 Thread::Thread(char* threadName)
 {
     if(tNum>=TIDSize){
@@ -52,7 +53,7 @@ Thread::Thread(char* threadName)
         }
     }
     tGroup[threadID]=this;
-    printf("a new thread created with tid=%d tNum=%d\n", getTID(), tNum);
+    //printf("a new thread created with tid=%d tNum=%d\n", getTID(), tNum);
     
     name = threadName;
     stackTop = NULL;
@@ -61,6 +62,43 @@ Thread::Thread(char* threadName)
 #ifdef USER_PROGRAM
     space = NULL;
 #endif
+
+    setPriority(50);
+
+}
+
+/*set priority version*/
+Thread::Thread(char* threadName, int prio)
+{
+    if(tNum>=TIDSize){
+        printf("Too many threads. Cannot generate more.\n");
+    }
+
+    ASSERT(tNum<TIDSize);
+    userID=getuid();
+
+    for(int i=0;i<TIDSize;++i){
+        if(TID[i]==0){
+            threadID=i;
+            TID[i]=1;
+            ++tNum;
+            break;
+        }
+    }
+    tGroup[threadID]=this;
+    //printf("a new thread created with tid=%d tNum=%d\n", getTID(), tNum);
+    
+    name = threadName;
+    stackTop = NULL;
+    stack = NULL;
+    status = JUST_CREATED;
+#ifdef USER_PROGRAM
+    space = NULL;
+#endif
+
+    if(prio>100)prio=100;
+    if(prio<1)prio=1;
+    setPriority(prio);
 
 }
 
@@ -83,8 +121,11 @@ Thread::~Thread()
     TID[threadID]=0;
     tGroup[threadID]=NULL;
     --tNum;
+//printf("this=%d cu=%d", this->getTID(), currentThread->getTID());
+//printf("here\n");
 
     ASSERT(this != currentThread);
+
     if (stack != NULL)
 	DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
 }
@@ -173,7 +214,7 @@ Thread::Finish ()
     
     DEBUG('t', "Finishing thread \"%s\"\n", getName());
     
-    threadToBeDestroyed = currentThread;
+    threadToBeDestroyed = currentThread;//printf("fin%d\n", this->getTID());
     Sleep();					// invokes SWITCH
     // not reached
 }
@@ -207,9 +248,17 @@ Thread::Yield ()
     DEBUG('t', "Yielding thread \"%s\"\n", getName());
     
     nextThread = scheduler->FindNextToRun();
+
     if (nextThread != NULL) {
-	scheduler->ReadyToRun(this);
-	scheduler->Run(nextThread);
+        //if nextThread's priority too low, don't switch
+        if(nextThread->getPriority()>getPriority()){
+            scheduler -> ReadyToRun(nextThread);
+            nextThread=NULL;
+        }
+        else{
+	    scheduler->ReadyToRun(this);
+	    scheduler->Run(nextThread);
+        }
     }
     (void) interrupt->SetLevel(oldLevel);
 }
@@ -246,7 +295,7 @@ Thread::Sleep ()
     status = BLOCKED;
     while ((nextThread = scheduler->FindNextToRun()) == NULL)
 	interrupt->Idle();	// no one to run, wait for an interrupt
-        
+    //printf("nxt=%d\n",nextThread->getTID());
     scheduler->Run(nextThread); // returns when we've been signalled
 }
 
